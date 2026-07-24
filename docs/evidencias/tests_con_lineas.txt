@@ -1,0 +1,101 @@
+     1	from datetime import datetime
+     2	
+     3	import pytest
+     4	
+     5	from reservas.models import Cancha, EstadoReserva, Usuario
+     6	from reservas.repositories import RepositorioReservasMemoria
+     7	from reservas.services import ServicioReservas
+     8	
+     9	
+    10	def crear_servicio():
+    11	    repositorio = RepositorioReservasMemoria()
+    12	    return ServicioReservas(repositorio)
+    13	
+    14	
+    15	def crear_usuario():
+    16	    return Usuario(
+    17	        id="U1",
+    18	        nombre="Esteban Garcia",
+    19	        email="esteban@email.com",
+    20	    )
+    21	
+    22	
+    23	def crear_cancha():
+    24	    return Cancha(
+    25	        id="C1",
+    26	        nombre="Cancha Samanes 1",
+    27	        ubicacion="Parque Samanes",
+    28	        precio_por_hora=20.0,
+    29	    )
+    30	
+    31	
+    32	def test_consultar_disponibilidad_en_cancha_libre():
+    33	    servicio = crear_servicio()
+    34	    cancha = crear_cancha()
+    35	
+    36	    inicio = datetime(2026, 7, 25, 18, 0)
+    37	    fin = datetime(2026, 7, 25, 19, 0)
+    38	
+    39	    disponible = servicio.consultar_disponibilidad(cancha, inicio, fin)
+    40	
+    41	    assert disponible is True
+    42	
+    43	
+    44	def test_crear_reserva_pendiente_con_precio_correcto():
+    45	    servicio = crear_servicio()
+    46	    usuario = crear_usuario()
+    47	    cancha = crear_cancha()
+    48	
+    49	    inicio = datetime(2026, 7, 25, 18, 0)
+    50	    fin = datetime(2026, 7, 25, 20, 0)
+    51	
+    52	    reserva = servicio.crear_reserva("R1", usuario, cancha, inicio, fin)
+    53	
+    54	    assert reserva.id == "R1"
+    55	    assert reserva.estado == EstadoReserva.PENDIENTE
+    56	    assert reserva.precio_total == 40.0
+    57	
+    58	
+    59	def test_no_permite_reserva_solapada_confirmada():
+    60	    servicio = crear_servicio()
+    61	    usuario = crear_usuario()
+    62	    cancha = crear_cancha()
+    63	
+    64	    inicio = datetime(2026, 7, 25, 18, 0)
+    65	    fin = datetime(2026, 7, 25, 19, 0)
+    66	
+    67	    servicio.crear_reserva("R1", usuario, cancha, inicio, fin)
+    68	    servicio.registrar_pago_aprobado("R1", "PAGO1", "TX-001")
+    69	
+    70	    with pytest.raises(ValueError):
+    71	        servicio.crear_reserva("R2", usuario, cancha, inicio, fin)
+    72	
+    73	
+    74	def test_confirmar_reserva_con_pago_aprobado():
+    75	    servicio = crear_servicio()
+    76	    usuario = crear_usuario()
+    77	    cancha = crear_cancha()
+    78	
+    79	    inicio = datetime(2026, 7, 25, 18, 0)
+    80	    fin = datetime(2026, 7, 25, 19, 0)
+    81	
+    82	    servicio.crear_reserva("R1", usuario, cancha, inicio, fin)
+    83	    reserva = servicio.registrar_pago_aprobado("R1", "PAGO1", "TX-001")
+    84	
+    85	    assert reserva.estado == EstadoReserva.CONFIRMADA
+    86	    assert reserva.pago is not None
+    87	    assert reserva.pago.referencia_externa == "TX-001"
+    88	
+    89	
+    90	def test_cancelar_reserva():
+    91	    servicio = crear_servicio()
+    92	    usuario = crear_usuario()
+    93	    cancha = crear_cancha()
+    94	
+    95	    inicio = datetime(2026, 7, 25, 18, 0)
+    96	    fin = datetime(2026, 7, 25, 19, 0)
+    97	
+    98	    servicio.crear_reserva("R1", usuario, cancha, inicio, fin)
+    99	    reserva = servicio.cancelar_reserva("R1")
+   100	
+   101	    assert reserva.estado == EstadoReserva.CANCELADA

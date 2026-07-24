@@ -1,0 +1,64 @@
+     1	from datetime import datetime
+     2	from .models import Cancha, EstadoPago, Pago, Reserva, Usuario
+     3	
+     4	
+     5	class ServicioReservas:
+     6	    def __init__(self, repositorio_reservas):
+     7	        self.repositorio_reservas = repositorio_reservas
+     8	
+     9	    def consultar_disponibilidad(self, cancha: Cancha, inicio: datetime, fin: datetime) -> bool:
+    10	        if not cancha.esta_disponible_para_reservar():
+    11	            return False
+    12	
+    13	        for reserva in self.repositorio_reservas.listar():
+    14	            if reserva.se_solapa_con(cancha.id, inicio, fin):
+    15	                return False
+    16	
+    17	        return True
+    18	
+    19	    def crear_reserva(self, reserva_id: str, usuario: Usuario, cancha: Cancha, inicio: datetime, fin: datetime) -> Reserva:
+    20	        if inicio >= fin:
+    21	            raise ValueError("La hora de inicio debe ser menor que la hora de fin.")
+    22	
+    23	        if not self.consultar_disponibilidad(cancha, inicio, fin):
+    24	            raise ValueError("La cancha no está disponible en ese horario.")
+    25	
+    26	        horas = (fin - inicio).total_seconds() / 3600
+    27	        precio_total = horas * cancha.precio_por_hora
+    28	
+    29	        reserva = Reserva(
+    30	            id=reserva_id,
+    31	            usuario=usuario,
+    32	            cancha=cancha,
+    33	            inicio=inicio,
+    34	            fin=fin,
+    35	            precio_total=precio_total,
+    36	        )
+    37	
+    38	        return self.repositorio_reservas.guardar(reserva)
+    39	
+    40	    def registrar_pago_aprobado(self, reserva_id: str, pago_id: str, referencia_externa: str) -> Reserva:
+    41	        reserva = self.repositorio_reservas.obtener_por_id(reserva_id)
+    42	
+    43	        if reserva is None:
+    44	            raise ValueError("No existe una reserva con ese ID.")
+    45	
+    46	        pago = Pago(
+    47	            id=pago_id,
+    48	            reserva_id=reserva_id,
+    49	            monto=reserva.precio_total,
+    50	            estado=EstadoPago.APROBADO,
+    51	            referencia_externa=referencia_externa,
+    52	        )
+    53	
+    54	        reserva.confirmar(pago)
+    55	        return self.repositorio_reservas.guardar(reserva)
+    56	
+    57	    def cancelar_reserva(self, reserva_id: str) -> Reserva:
+    58	        reserva = self.repositorio_reservas.obtener_por_id(reserva_id)
+    59	
+    60	        if reserva is None:
+    61	            raise ValueError("No existe una reserva con ese ID.")
+    62	
+    63	        reserva.cancelar()
+    64	        return self.repositorio_reservas.guardar(reserva)

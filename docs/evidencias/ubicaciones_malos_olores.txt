@@ -1,0 +1,43 @@
+src/reservas/models.py:1:from dataclasses import dataclass
+src/reservas/models.py:7:class EstadoReserva(Enum):
+src/reservas/models.py:13:class EstadoPago(Enum):
+src/reservas/models.py:20:@dataclass
+src/reservas/models.py:21:class Usuario:
+src/reservas/models.py:22:    id: str
+src/reservas/models.py:23:    nombre: str
+src/reservas/models.py:24:    email: str
+src/reservas/models.py:27:@dataclass
+src/reservas/models.py:28:class Cancha:
+src/reservas/models.py:29:    id: str
+src/reservas/models.py:30:    nombre: str
+src/reservas/models.py:31:    ubicacion: str
+src/reservas/models.py:35:    def esta_disponible_para_reservar(self) -> bool:
+src/reservas/models.py:39:@dataclass
+src/reservas/models.py:40:class Pago:
+src/reservas/models.py:41:    id: str
+src/reservas/models.py:42:    reserva_id: str
+src/reservas/models.py:44:    estado: EstadoPago = EstadoPago.PENDIENTE
+src/reservas/models.py:45:    referencia_externa: Optional[str] = None
+src/reservas/models.py:48:@dataclass
+src/reservas/models.py:49:class Reserva:
+src/reservas/models.py:50:    id: str
+src/reservas/models.py:57:    pago: Optional[Pago] = None
+src/reservas/models.py:59:    def confirmar(self, pago: Pago) -> None:
+src/reservas/models.py:60:        if pago.estado != EstadoPago.APROBADO:
+src/reservas/models.py:61:            raise ValueError("La reserva solo puede confirmarse con un pago aprobado.")
+src/reservas/models.py:66:    def cancelar(self) -> None:
+src/reservas/models.py:68:            raise ValueError("La reserva ya se encuentra cancelada.")
+src/reservas/models.py:72:    def se_solapa_con(self, cancha_id: str, inicio: datetime, fin: datetime) -> bool:
+src/reservas/services.py:2:from .models import Cancha, EstadoPago, Pago, Reserva, Usuario
+src/reservas/services.py:5:class ServicioReservas:
+src/reservas/services.py:6:    def __init__(self, repositorio_reservas):
+src/reservas/services.py:9:    def consultar_disponibilidad(self, cancha: Cancha, inicio: datetime, fin: datetime) -> bool:
+src/reservas/services.py:19:    def crear_reserva(self, reserva_id: str, usuario: Usuario, cancha: Cancha, inicio: datetime, fin: datetime) -> Reserva:
+src/reservas/services.py:21:            raise ValueError("La hora de inicio debe ser menor que la hora de fin.")
+src/reservas/services.py:24:            raise ValueError("La cancha no está disponible en ese horario.")
+src/reservas/services.py:40:    def registrar_pago_aprobado(self, reserva_id: str, pago_id: str, referencia_externa: str) -> Reserva:
+src/reservas/services.py:44:            raise ValueError("No existe una reserva con ese ID.")
+src/reservas/services.py:46:        pago = Pago(
+src/reservas/services.py:50:            estado=EstadoPago.APROBADO,
+src/reservas/services.py:57:    def cancelar_reserva(self, reserva_id: str) -> Reserva:
+src/reservas/services.py:61:            raise ValueError("No existe una reserva con ese ID.")

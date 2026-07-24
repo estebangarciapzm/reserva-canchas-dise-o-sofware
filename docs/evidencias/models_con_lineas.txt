@@ -1,0 +1,77 @@
+     1	from dataclasses import dataclass
+     2	from datetime import datetime
+     3	from enum import Enum
+     4	from typing import Optional
+     5	
+     6	
+     7	class EstadoReserva(Enum):
+     8	    PENDIENTE = "PENDIENTE"
+     9	    CONFIRMADA = "CONFIRMADA"
+    10	    CANCELADA = "CANCELADA"
+    11	
+    12	
+    13	class EstadoPago(Enum):
+    14	    PENDIENTE = "PENDIENTE"
+    15	    APROBADO = "APROBADO"
+    16	    RECHAZADO = "RECHAZADO"
+    17	    REEMBOLSADO = "REEMBOLSADO"
+    18	
+    19	
+    20	@dataclass
+    21	class Usuario:
+    22	    id: str
+    23	    nombre: str
+    24	    email: str
+    25	
+    26	
+    27	@dataclass
+    28	class Cancha:
+    29	    id: str
+    30	    nombre: str
+    31	    ubicacion: str
+    32	    precio_por_hora: float
+    33	    activa: bool = True
+    34	
+    35	    def esta_disponible_para_reservar(self) -> bool:
+    36	        return self.activa
+    37	
+    38	
+    39	@dataclass
+    40	class Pago:
+    41	    id: str
+    42	    reserva_id: str
+    43	    monto: float
+    44	    estado: EstadoPago = EstadoPago.PENDIENTE
+    45	    referencia_externa: Optional[str] = None
+    46	
+    47	
+    48	@dataclass
+    49	class Reserva:
+    50	    id: str
+    51	    usuario: Usuario
+    52	    cancha: Cancha
+    53	    inicio: datetime
+    54	    fin: datetime
+    55	    precio_total: float
+    56	    estado: EstadoReserva = EstadoReserva.PENDIENTE
+    57	    pago: Optional[Pago] = None
+    58	
+    59	    def confirmar(self, pago: Pago) -> None:
+    60	        if pago.estado != EstadoPago.APROBADO:
+    61	            raise ValueError("La reserva solo puede confirmarse con un pago aprobado.")
+    62	
+    63	        self.pago = pago
+    64	        self.estado = EstadoReserva.CONFIRMADA
+    65	
+    66	    def cancelar(self) -> None:
+    67	        if self.estado == EstadoReserva.CANCELADA:
+    68	            raise ValueError("La reserva ya se encuentra cancelada.")
+    69	
+    70	        self.estado = EstadoReserva.CANCELADA
+    71	
+    72	    def se_solapa_con(self, cancha_id: str, inicio: datetime, fin: datetime) -> bool:
+    73	        misma_cancha = self.cancha.id == cancha_id
+    74	        reserva_activa = self.estado == EstadoReserva.CONFIRMADA
+    75	        horarios_solapados = self.inicio < fin and inicio < self.fin
+    76	
+    77	        return misma_cancha and reserva_activa and horarios_solapados
