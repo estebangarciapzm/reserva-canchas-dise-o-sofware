@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Optional
+from .exceptions import PagoNoAprobadoError, ReservaYaCanceladaError
 
 
 class EstadoReserva(Enum):
@@ -80,13 +81,13 @@ class Reserva:
 
     def confirmar(self, pago: Pago) -> None:
         if pago.estado != EstadoPago.APROBADO:
-            raise ValueError("La reserva solo puede confirmarse con un pago aprobado.")
+            raise PagoNoAprobadoError("La reserva solo puede confirmarse con un pago aprobado.")
         self.pago = pago
         self.estado = EstadoReserva.CONFIRMADA
 
     def cancelar(self) -> None:
         if self.estado == EstadoReserva.CANCELADA:
-            raise ValueError("La reserva ya se encuentra cancelada.")
+            raise ReservaYaCanceladaError("La reserva ya se encuentra cancelada.")
         self.estado = EstadoReserva.CANCELADA
 
     def se_solapa_con(self, cancha_id: str, inicio: datetime, fin: datetime) -> bool:
