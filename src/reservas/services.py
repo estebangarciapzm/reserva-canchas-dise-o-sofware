@@ -1,10 +1,12 @@
 from datetime import datetime
 from .models import Cancha, EstadoPago, HorarioReserva, Pago, Reserva, Usuario
+from .pricing import CalculadorPrecio
 
 
 class ServicioReservas:
-    def __init__(self, repositorio_reservas):
+    def __init__(self, repositorio_reservas, calculador_precio=None):
         self.repositorio_reservas = repositorio_reservas
+        self.calculador_precio = calculador_precio or CalculadorPrecio()
 
     def consultar_disponibilidad(self, cancha: Cancha, inicio: datetime, fin: datetime) -> bool:
         horario = HorarioReserva(inicio, fin)
@@ -22,7 +24,7 @@ class ServicioReservas:
         if not self.consultar_disponibilidad(cancha, horario.inicio, horario.fin):
             raise ValueError("La cancha no está disponible en ese horario.")
 
-        precio_total = horario.duracion_horas() * cancha.precio_por_hora
+        precio_total = self.calculador_precio.calcular(cancha, horario)
         reserva = Reserva(
             id=reserva_id,
             usuario=usuario,
