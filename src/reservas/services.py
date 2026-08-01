@@ -1,7 +1,7 @@
 from datetime import datetime
 from .availability import ServicioDisponibilidad
 from .exceptions import HorarioInvalidoError, ReservaNoDisponibleError, ReservaNoEncontradaError
-from .models import Cancha, EstadoPago, HorarioReserva, Pago, Reserva, Usuario
+from .models import Cancha, HorarioReserva, Pago, Reserva, Usuario
 from .pricing import CalculadorPrecio
 
 
@@ -36,11 +36,11 @@ class ServicioReservas:
         reserva = self.repositorio_reservas.obtener_por_id(reserva_id)
         if reserva is None:
             raise ReservaNoEncontradaError("No existe una reserva con ese ID.")
-        pago = Pago(
-            id=pago_id,
+
+        pago = Pago.aprobado(
+            pago_id=pago_id,
             reserva_id=reserva_id,
             monto=reserva.precio_total,
-            estado=EstadoPago.APROBADO,
             referencia_externa=referencia_externa,
         )
         reserva.confirmar(pago)

@@ -60,6 +60,16 @@ class Pago:
     estado: EstadoPago = EstadoPago.PENDIENTE
     referencia_externa: Optional[str] = None
 
+    @classmethod
+    def aprobado(cls, pago_id: str, reserva_id: str, monto: float, referencia_externa: str) -> "Pago":
+        return cls(
+            id=pago_id,
+            reserva_id=reserva_id,
+            monto=monto,
+            estado=EstadoPago.APROBADO,
+            referencia_externa=referencia_externa,
+        )
+
 
 @dataclass
 class Reserva:
