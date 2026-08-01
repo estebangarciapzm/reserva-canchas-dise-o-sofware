@@ -1,0 +1,4 @@
+Disponibilidad inicial: True
+Reserva creada: R1 PENDIENTE Precio: 40.0
+Reserva confirmada: CONFIRMADA
+Reserva cancelada: CANCELADA
