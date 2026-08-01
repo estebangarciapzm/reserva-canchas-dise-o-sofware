@@ -1,0 +1,100 @@
+@startuml
+skinparam classAttributeIconSize 0
+
+class Usuario {
+  +id: str
+  +nombre: str
+  +email: str
+}
+
+class Cancha {
+  +id: str
+  +nombre: str
+  +ubicacion: str
+  +precio_por_hora: float
+  +activa: bool
+  +esta_disponible_para_reservar(): bool
+}
+
+class HorarioReserva {
+  +inicio: datetime
+  +fin: datetime
+  +es_valido(): bool
+  +duracion_horas(): float
+  +se_solapa_con(otro): bool
+}
+
+class Reserva {
+  +id: str
+  +horario: HorarioReserva
+  +precio_total: float
+  +estado: EstadoReserva
+  +confirmar(pago): void
+  +cancelar(): void
+  +se_solapa_con(cancha_id, inicio, fin): bool
+}
+
+class Pago {
+  +id: str
+  +reserva_id: str
+  +monto: float
+  +estado: EstadoPago
+  +referencia_externa: str
+  +aprobado(...): Pago
+}
+
+class ServicioReservas {
+  +consultar_disponibilidad(cancha, inicio, fin): bool
+  +crear_reserva(...): Reserva
+  +crear_reserva_desde_comando(comando): Reserva
+  +registrar_pago_aprobado(...): Reserva
+  +registrar_pago_desde_comando(comando): Reserva
+  +cancelar_reserva(reserva_id): Reserva
+}
+
+class ServicioDisponibilidad {
+  +consultar(cancha, horario): bool
+}
+
+class CalculadorPrecio {
+  +calcular(cancha, horario): float
+}
+
+class RepositorioReservasMemoria {
+  -_reservas: Dict
+  +guardar(reserva): Reserva
+  +obtener_por_id(reserva_id): Reserva
+  +listar(): List
+}
+
+class CrearReservaCommand
+class RegistrarPagoCommand
+
+enum EstadoReserva {
+  PENDIENTE
+  CONFIRMADA
+  CANCELADA
+}
+
+enum EstadoPago {
+  PENDIENTE
+  APROBADO
+  RECHAZADO
+  REEMBOLSADO
+}
+
+Usuario "1" -- "0..*" Reserva
+Cancha "1" -- "0..*" Reserva
+Reserva "1" -- "1" HorarioReserva
+Reserva "1" -- "0..1" Pago
+Reserva --> EstadoReserva
+Pago --> EstadoPago
+
+ServicioReservas ..> ServicioDisponibilidad
+ServicioReservas ..> CalculadorPrecio
+ServicioReservas ..> RepositorioReservasMemoria
+ServicioReservas ..> CrearReservaCommand
+ServicioReservas ..> RegistrarPagoCommand
+ServicioDisponibilidad ..> RepositorioReservasMemoria
+
+@enduml
