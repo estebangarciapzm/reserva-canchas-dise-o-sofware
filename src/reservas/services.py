@@ -1,28 +1,25 @@
 from datetime import datetime
+from .availability import ServicioDisponibilidad
 from .exceptions import HorarioInvalidoError, ReservaNoDisponibleError, ReservaNoEncontradaError
 from .models import Cancha, EstadoPago, HorarioReserva, Pago, Reserva, Usuario
 from .pricing import CalculadorPrecio
 
 
 class ServicioReservas:
-    def __init__(self, repositorio_reservas, calculador_precio=None):
+    def __init__(self, repositorio_reservas, servicio_disponibilidad=None, calculador_precio=None):
         self.repositorio_reservas = repositorio_reservas
+        self.servicio_disponibilidad = servicio_disponibilidad or ServicioDisponibilidad(repositorio_reservas)
         self.calculador_precio = calculador_precio or CalculadorPrecio()
 
     def consultar_disponibilidad(self, cancha: Cancha, inicio: datetime, fin: datetime) -> bool:
         horario = HorarioReserva(inicio, fin)
-        if not cancha.esta_disponible_para_reservar():
-            return False
-        for reserva in self.repositorio_reservas.listar():
-            if reserva.se_solapa_con(cancha.id, horario.inicio, horario.fin):
-                return False
-        return True
+        return self.servicio_disponibilidad.consultar(cancha, horario)
 
     def crear_reserva(self, reserva_id: str, usuario: Usuario, cancha: Cancha, inicio: datetime, fin: datetime) -> Reserva:
         horario = HorarioReserva(inicio, fin)
         if not horario.es_valido():
             raise HorarioInvalidoError("La hora de inicio debe ser menor que la hora de fin.")
-        if not self.consultar_disponibilidad(cancha, horario.inicio, horario.fin):
+        if not self.servicio_disponibilidad.consultar(cancha, horario):
             raise ReservaNoDisponibleError("La cancha no está disponible en ese horario.")
 
         precio_total = self.calculador_precio.calcular(cancha, horario)
